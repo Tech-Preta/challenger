@@ -78,4 +78,4 @@ deploy:
     - echo "${KUBECONFIG}" | base64 -d > /config
     - export KUBECONFIG=/config
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
-    - helm install httpd -f helm-charts/charts/httpd/values.yaml -n $NAMESPACE helm-charts/charts/httpd
+    - helm upgrade httpd -f charts/httpd/values.yaml -n granato charts/httpd
