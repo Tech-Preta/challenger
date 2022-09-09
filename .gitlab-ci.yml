@@ -1,49 +1,81 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
-
 stages:          # List of stages for jobs, and their order of execution
   - build
   - test
+  - push
   - deploy
 
-build-job:       # This job runs in the build stage, which runs first.
+variables: 
+  TAG: $CI_COMMIT_SHORT_SHA
+  IMAGE: nataliagranato/httpd:$TAG
+
+  
+build:
+  image: docker:20.10.16
   stage: build
+  services:
+    - docker:20.10.16-dind
   script:
-    - echo "Compiling the code..."
-    - echo "Compile complete."
+    - docker build -t $IMAGE .
+    - docker save --output httpd.tar $IMAGE
+  artifacts:
+    untracked: true
+    paths:
+      - "httpd.tar"
+    expire_in: 1 day
 
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
+test:
+  stage: test
+  image: docker:stable
+  dependencies:
+    - build
+  services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - export TRIVY_VERSION=$(wget -qO - "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    - echo $TRIVY_VERSION
+    - wget --no-verbose https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz -O - | tar -zxvf -
+  allow_failure: true
   script:
-    - echo "Running unit tests... This will take about 60 seconds."
-    - sleep 60
-    - echo "Code coverage is 90%"
+    - docker load -i httpd.tar
+    - ./trivy image --exit-code 0 --no-progress --format template --template "@contrib/gitlab.tpl" -o gl-container-scanning-report.json $IMAGE
+    # Print report
+    - ./trivy image --exit-code 0 --no-progress --severity HIGH $IMAGE
+    # Fail on severe vulnerabilities
+    - ./trivy image --exit-code 0 --severity CRITICAL --no-progress $IMAGE
+  artifacts:
+    reports:
+      container_scanning: gl-container-scanning-report.json  
 
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
+push:
+  image: docker:stable
+  stage: push
+  dependencies:
+    - build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
   script:
-    - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
-    - echo "No lint issues found."
+    - docker load -i httpd.tar
+    - docker push $IMAGE
 
-deploy-job:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-  environment: production
+deploy:
+  stage: deploy
+  image: dirceusilva/base_k8s_python
+  before_script:
+    - curl -q --user-agent curl-ci-sync -sSL -o "helm-v3.2.4-linux-amd64.tar.gz" "https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz"
+    - tar xzf "helm-v3.2.4-linux-amd64.tar.gz"
+    - mv ./linux-amd64/helm /usr/local/bin
+
+
   script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
+    - echo "${KUBECONFIG}" | base64 -d > /config
+    - export KUBECONFIG=/config
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
+    - helm install httpd -f helm-charts/charts/httpd/values.yaml -n $NAMESPACE helm-charts/charts/httpd
