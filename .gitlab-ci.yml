@@ -78,5 +78,5 @@ deploy:
     - echo "${KUBECONFIG}" | base64 -d > /config
     - export KUBECONFIG=/config
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com:nataliagranato/nataliagranato-helm.git
-    - ls
+    - ls -lha
 #    - helm upgrade httpd -f charts/httpd/values.yaml -n granato charts/httpd
