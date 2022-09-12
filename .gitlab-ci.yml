@@ -80,4 +80,4 @@ deploy:
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
     - cd nataliagranato-helm/charts/httpd
 #    - helm upgrade httpd -f charts/httpd/values.yaml -n granato charts/httpd
-    - helm install area-colaborador -f values.yaml -n granato .
+    - helm install httpd-lab -f values.yaml -n granato .
