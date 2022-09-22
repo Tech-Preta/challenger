@@ -8,7 +8,7 @@ cat <<EOT
         <title>Calculadora Jack Experts v2</title>
 </head>
 <body>
-        <p>Oi! Insira os valores aqui</p>
+        <p>Oi! Insira os valores</p>
         <form action="info.sh" method="get">
                 <label>Valor 1</label>
                 <input type="text" name="n1">
