@@ -2,6 +2,7 @@ stages:          # List of stages for jobs, and their order of execution
   - build
   - test
   - push
+  - update
   - deploy
 
 variables: 
@@ -52,6 +53,8 @@ test:
     reports:
       container_scanning: gl-container-scanning-report.json  
 
+
+
 push:
   image: docker:stable
   stage: push
@@ -64,8 +67,6 @@ push:
   script:
     - docker load -i httpd.tar
     - docker push $IMAGE
-  dependencies:
-    - build  
 
 update:
   stage: update
@@ -78,8 +79,8 @@ update:
     - git config user.name "$CI_REGISTRY_USER"
     - git add .
     - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA"
-  script: 
 
+  script: 
     - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato/nataliagranato-helm.git
 
   dependencies:
