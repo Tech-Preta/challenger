@@ -64,6 +64,29 @@ push:
   script:
     - docker load -i httpd.tar
     - docker push $IMAGE
+  dependencies:
+    - build  
+
+update:
+  stage: update
+  image: labsjac/ubuntu-git:0.1.0
+  before_script:
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
+    - CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA yq e -i '.image.tag = env(CI_COMMIT_SHORT_SHA)' ./nataliagranato-helm/charts/httpd/values.yaml
+    - cd nataliagranato-helm/charts/httpd
+    - git config user.email "$natalia.granato@jackexperts.com"
+    - git config user.name "$CI_REGISTRY_USER"
+    - git add .
+    - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA"
+  script: 
+
+    - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato/nataliagranato-helm.git
+
+  dependencies:
+    - push
+
+
+
 
 deploy:
   stage: deploy
