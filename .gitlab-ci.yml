@@ -81,7 +81,7 @@ update:
     - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA"
 
   script: 
-    - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato/nataliagranato-helm.git
+    - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato/challenger.git
 
   dependencies:
     - push
