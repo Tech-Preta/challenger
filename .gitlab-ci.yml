@@ -1,7 +1,4 @@
 stages:          # List of stages for jobs, and their order of execution
-  - build
-  - test
-  - push
   - update
   - deploy
 
@@ -9,70 +6,11 @@ variables:
   TAG: $CI_COMMIT_SHORT_SHA
   IMAGE: nataliagranato/httpd:$TAG
 
-  
-build:
-  image: docker:20.10.16
-  stage: build
-  services:
-    - docker:20.10.16-dind
-  script:
-    - docker build -t $IMAGE .
-    - docker save --output httpd.tar $IMAGE
-  artifacts:
-    untracked: true
-    paths:
-      - "httpd.tar"
-    expire_in: 1 day
-
-test:
-  stage: test
-  image: docker:stable
-  dependencies:
-    - build
-  services:
-    - name: docker:dind
-      entrypoint: ["env", "-u", "DOCKER_HOST"]
-      command: ["dockerd-entrypoint.sh"]
-  variables:
-    DOCKER_HOST: tcp://docker:2375/
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - export TRIVY_VERSION=$(wget -qO - "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-    - echo $TRIVY_VERSION
-    - wget --no-verbose https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz -O - | tar -zxvf -
-  allow_failure: true
-  script:
-    - docker load -i httpd.tar
-    - ./trivy image --exit-code 0 --no-progress --format template --template "@contrib/gitlab.tpl" -o gl-container-scanning-report.json $IMAGE
-    # Print report
-    - ./trivy image --exit-code 0 --no-progress --severity HIGH $IMAGE
-    # Fail on severe vulnerabilities
-    - ./trivy image --exit-code 0 --severity CRITICAL --no-progress $IMAGE
-  artifacts:
-    reports:
-      container_scanning: gl-container-scanning-report.json  
-
-
-
-push:
-  image: docker:stable
-  stage: push
-  dependencies:
-    - build
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-  script:
-    - docker load -i httpd.tar
-    - docker push $IMAGE
-
 update:
   stage: update
   image: labsjac/ubuntu-git:0.1.0
   before_script:
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
+    - git clone https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com/nataliagranato/nataliagranato-helm.git
     - ls -lha
     - CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA yq e -i '.image.tag = env(CI_COMMIT_SHORT_SHA)' ./nataliagranato-helm/charts/httpd/values.yaml
     - cd nataliagranato-helm/charts/httpd
@@ -82,10 +20,7 @@ update:
     - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA"
 
   script: 
-    - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato/challenger.git
-
-  dependencies:
-    - push
+    - git push https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com/nataliagranato/nataliagranato-helm.git
 
 
 
