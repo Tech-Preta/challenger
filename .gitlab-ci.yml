@@ -101,6 +101,6 @@ deploy:
   script:
     - echo "${KUBECONFIG}" | base64 -d > /config
     - export KUBECONFIG=/config
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
+    - git clone https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato-helm.git
     - cd nataliagranato-helm/charts/httpd
     - helm upgrade httpd-lab -f values.yaml -n granato .
