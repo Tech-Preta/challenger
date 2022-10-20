@@ -8,7 +8,6 @@ stages:          # List of stages for jobs, and their order of execution
 variables: 
   TAG: $CI_COMMIT_SHORT_SHA
   IMAGE: nataliagranato/httpd:$TAG
-
   
 build:
   image: docker:20.10.16
@@ -53,8 +52,6 @@ test:
     reports:
       container_scanning: gl-container-scanning-report.json  
 
-
-
 push:
   image: docker:stable
   stage: push
@@ -87,8 +84,6 @@ update:
   dependencies:
     - push
 
-
-
 deploy:
   stage: deploy
   image: dirceusilva/base_k8s_python
@@ -101,6 +96,8 @@ deploy:
   script:
     - echo "${KUBECONFIG}" | base64 -d > /config
     - export KUBECONFIG=/config
-    - git clone https://${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD}@gitlab.com:nataliagranato-helm.git
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
     - cd nataliagranato-helm/charts/httpd
     - helm upgrade httpd-lab -f values.yaml -n granato .
+  dependencies:
+    - update
