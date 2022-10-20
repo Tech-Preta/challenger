@@ -76,7 +76,7 @@ update:
     - git config user.email "$natalia.granato@jackexperts.com"
     - git config user.name "$CI_REGISTRY_USER"
     - git add .
-    - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA"
+    - git commit -m "Changing image tag to $CI_COMMIT_SHORT_SHA and dependencies"
 
   script: 
     - git push https://${CI_REGISTRY_USER}:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
