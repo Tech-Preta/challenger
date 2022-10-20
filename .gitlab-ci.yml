@@ -11,9 +11,9 @@ update:
   image: labsjac/ubuntu-git:0.1.0
   before_script:
     - git clone https://${CI_REGISTRY_USER}:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
+    - cd nataliagranato-helm/charts/httpd
     - ls -lha
     - CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA yq e -i '.image.tag = env(CI_COMMIT_SHORT_SHA)' ./nataliagranato-helm/charts/httpd/values.yaml
-    - cd nataliagranato-helm/charts/httpd
     - git config user.email "$natalia.granato@jackexperts.com"
     - git config user.name "$CI_REGISTRY_USER"
     - git add .
@@ -21,9 +21,6 @@ update:
 
   script: 
     - git push https://${CI_REGISTRY_USER}:${CI_JOB_TOKEN}@gitlab.com/nataliagranato/nataliagranato-helm.git
-
-    https://gitlab.com/nataliagranato/nataliagranato-helm.git
-
 
 
 deploy:
