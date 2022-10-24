@@ -5,7 +5,7 @@ cat <<EOT
 <!DOCTYPE html>
 <html>
 <head>
-        <title>Calculadora Natália Granato</title>
+        <title>Calculos Natalia Granato</title>
 </head>
 <body>
         <p>Oi! Insira os valores</p>
