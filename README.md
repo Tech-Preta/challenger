@@ -16,11 +16,13 @@ docker tag httpd:v1 nataliagranato/httpd:v2
 ```
 
 ### Run
+Executando o container:
 ```
 docker container run --name httpd -p 80:80 httpd:v2
 ```
 
 ### Access
+Acessando nossa aplicação no navegador:
 ```
 localhost:80
 ```
