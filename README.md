@@ -12,7 +12,7 @@ docker build -t httpd:v2 .
 ### Share
 Colocando uma tag na imagem para enviar para o nosso repositório:
 ```
-docker tag httpd:v1 nataliagranato/httpd:v2 
+docker tag httpd:v2 nataliagranato/httpd:v2 
 ```
 
 ### Run
